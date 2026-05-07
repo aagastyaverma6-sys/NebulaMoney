@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expenses — Nebula</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="nav-logo">nebula<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="learn.html">Learn</a></li>
+    <li><a href="tools.html">Tools</a></li>
+    <li><a href="appreciate.html">Appreciate</a></li>
+    <li><a href="expenses.html" class="active">Expenses</a></li>
+    <li><a href="https://nebula-atom.vercel.app">Hub</a></li>
+  </ul>
+</nav>
+<main>
+<div class="container">
+  <div class="page-header fade-up">
+    <div class="breadcrumb"><a href="index.html">Home</a> / Expenses</div>
+    <h1>Expense Manager</h1>
+    <p>Track where your money goes. Data saved locally on your device.</p>
+  </div>
+
+  <!-- Add Expense Form -->
+  <div class="expense-form fade-up" id="add-form">
+    <div class="field">
+      <label>DESCRIPTION</label>
+      <input type="text" id="exp-name" placeholder="e.g. Groceries" />
+    </div>
+    <div class="field">
+      <label>AMOUNT (₹)</label>
+      <input type="number" id="exp-amount" placeholder="0" />
+    </div>
+    <div class="field">
+      <label>CATEGORY</label>
+      <select class="field-select" id="exp-cat">
+        <option>Food</option>
+        <option>Transport</option>
+        <option>Housing</option>
+        <option>Health</option>
+        <option>Shopping</option>
+        <option>Entertainment</option>
+        <option>Education</option>
+        <option>Utilities</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>DATE</label>
+      <input type="date" id="exp-date" />
+    </div>
+    <button class="btn btn-primary" onclick="addExpense()" style="white-space:nowrap;align-self:flex-end;">+ Add</button>
+  </div>
+
+  <!-- Summary metrics -->
+  <div class="metric-grid fade-up fade-up-d1" id="exp-metrics"></div>
+
+  <!-- Chart + Table row -->
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:1.5rem;margin-top:1.5rem;" class="fade-up fade-up-d2" id="exp-viz">
+    <div class="chart-wrap" style="height:fit-content;">
+      <canvas id="pie-chart" style="max-height:260px;"></canvas>
+    </div>
+    <div>
+      <div class="expense-table-wrap">
+        <table class="expense-table" id="exp-table">
+          <thead><tr>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="exp-tbody"></tbody>
+        </table>
+      </div>
+      <p id="exp-empty" style="color:var(--text3);font-size:.9rem;margin-top:1rem;display:none;">No expenses yet. Add one above!</p>
+    </div>
+  </div>
+
+</div>
+</main>
+<footer><div class="container"><p>nebula<span style="color:var(--accent2);">.</span> &nbsp;·&nbsp; Data stored locally in your browser</p></div></footer>
+
+<script>
+const CATS = {
+  Food:'#7c6dfa', Transport:'#34d399', Housing:'#fbbf24', Health:'#f87171',
+  Shopping:'#22d3ee', Entertainment:'#a78bfa', Education:'#6ee7b7', Utilities:'#fcd34d', Other:'#9896b0'
+};
+
+let expenses = JSON.parse(localStorage.getItem('nebula_expenses') || '[]');
+let pieChart = null;
+
+document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+
+function save() { localStorage.setItem('nebula_expenses', JSON.stringify(expenses)); }
+
+function addExpense() {
+  const name = document.getElementById('exp-name').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const cat = document.getElementById('exp-cat').value;
+  const date = document.getElementById('exp-date').value;
+  if (!name || !amount || amount <= 0) { alert('Please enter a description and valid amount.'); return; }
+  expenses.unshift({ id: Date.now(), name, amount, cat, date });
+  save(); render();
+  document.getElementById('exp-name').value = '';
+  document.getElementById('exp-amount').value = '';
+}
+
+function deleteExpense(id) {
+  expenses = expenses.filter(e => e.id !== id);
+  save(); render();
+}
+
+function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+
+function render() {
+  const tbody = document.getElementById('exp-tbody');
+  const empty = document.getElementById('exp-empty');
+  tbody.innerHTML = '';
+
+  if (expenses.length === 0) {
+    empty.style.display = 'block';
+    document.getElementById('exp-table').style.display = 'none';
+  } else {
+    empty.style.display = 'none';
+    document.getElementById('exp-table').style.display = 'table';
+    expenses.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.name}</td>
+        <td><span class="cat-badge" style="background:${CATS[e.cat]}22;color:${CATS[e.cat]}">${e.cat}</span></td>
+        <td>${e.date}</td>
+        <td style="color:var(--text);font-weight:500;">${fmt(e.amount)}</td>
+        <td><button class="del-btn" onclick="deleteExpense(${e.id})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Metrics
+  const total = expenses.reduce((s,e) => s+e.amount, 0);
+  const cats = {};
+  expenses.forEach(e => { cats[e.cat] = (cats[e.cat]||0) + e.amount; });
+  const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+  const thisMonth = expenses.filter(e => e.date && e.date.startsWith(new Date().toISOString().slice(0,7))).reduce((s,e)=>s+e.amount,0);
+
+  document.getElementById('exp-metrics').innerHTML = `
+    <div class="metric-card"><div class="m-label">TOTAL SPENT</div><div class="m-val coral">${fmt(total)}</div></div>
+    <div class="metric-card"><div class="m-label">THIS MONTH</div><div class="m-val amber">${fmt(thisMonth)}</div></div>
+    <div class="metric-card"><div class="m-label">TRANSACTIONS</div><div class="m-val">${expenses.length}</div></div>
+    <div class="metric-card"><div class="m-label">TOP CATEGORY</div><div class="m-val" style="font-size:1.2rem;">${topCat ? topCat[0] : '—'}</div><div class="m-sub">${topCat ? fmt(topCat[1]) : ''}</div></div>
+  `;
+
+  // Pie chart
+  if (pieChart) pieChart.destroy();
+  if (Object.keys(cats).length > 0) {
+    const ctx = document.getElementById('pie-chart').getContext('2d');
+    pieChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(cats),
+        datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(c=>CATS[c]||'#9896b0'), borderWidth: 0 }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom', labels: { color:'#9896b0', font:{size:11}, padding:10, boxWidth:12 } },
+          tooltip: {
+            callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed)}` },
+            backgroundColor:'#16161f', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#f0eff8', bodyColor:'#9896b0'
+          }
+        }
+      }
+    });
+  }
+}
+
+render();
+</script>
+</body>
+</html>

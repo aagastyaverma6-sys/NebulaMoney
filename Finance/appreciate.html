@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Appreciate — Nebula</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="nav-logo">nebula<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="learn.html">Learn</a></li>
+    <li><a href="tools.html">Tools</a></li>
+    <li><a href="appreciate.html" class="active">Appreciate</a></li>
+    <li><a href="expenses.html">Expenses</a></li>
+    <li><a href="https://nebula-atom.vercel.app">Hub</a></li>
+  </ul>
+</nav>
+<main>
+<div class="container">
+  <div class="page-header fade-up">
+    <div class="breadcrumb"><a href="index.html">Home</a> / Appreciate</div>
+    <h1>Asset Appreciation</h1>
+    <p>Watch your money compound. Adjust the sliders to see your wealth grow.</p>
+  </div>
+
+  <!-- Inputs -->
+  <div class="calc-card fade-up">
+    <div class="calc-form">
+      <div class="field">
+        <label>INITIAL INVESTMENT (₹)</label>
+        <input type="number" id="app-initial" value="100000" oninput="updateChart()">
+      </div>
+      <div class="field">
+        <label>MONTHLY ADDITION (₹)</label>
+        <input type="number" id="app-monthly" value="5000" oninput="updateChart()">
+      </div>
+      <div class="field">
+        <label>ANNUAL RETURN (%)</label>
+        <input type="number" id="app-rate" value="12" step="0.5" oninput="updateChart()">
+      </div>
+      <div class="field">
+        <label>TIME PERIOD (YEARS)</label>
+        <input type="number" id="app-years" value="20" oninput="updateChart()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="metric-grid fade-up fade-up-d1" id="app-stats"></div>
+
+  <!-- Chart -->
+  <div class="chart-wrap fade-up fade-up-d2">
+    <canvas id="appreciate-chart"></canvas>
+  </div>
+
+</div>
+</main>
+<footer><div class="container"><p>nebula<span style="color:var(--accent2);">.</span> &nbsp;·&nbsp; <a href="index.html">Home</a></p></div></footer>
+
+<script>
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+let myChart = null;
+
+function updateChart() {
+  const initial = parseFloat(document.getElementById('app-initial').value) || 0;
+  const monthly = parseFloat(document.getElementById('app-monthly').value) || 0;
+  const rate = (parseFloat(document.getElementById('app-rate').value) || 0) / 100;
+  const years = parseInt(document.getElementById('app-years').value) || 1;
+
+  const labels = [], invested = [], value = [];
+  let corpus = initial, totalInvested = initial;
+  labels.push('Start'); invested.push(Math.round(totalInvested)); value.push(Math.round(corpus));
+
+  for (let y = 1; y <= years; y++) {
+    for (let m = 0; m < 12; m++) {
+      corpus = corpus * (1 + rate/12) + monthly;
+      totalInvested += monthly;
+    }
+    labels.push(`Y${y}`);
+    invested.push(Math.round(totalInvested));
+    value.push(Math.round(corpus));
+  }
+
+  const finalVal = corpus;
+  const totalInv = totalInvested;
+  const gain = finalVal - totalInv;
+  const cagr = totalInv > 0 ? ((Math.pow(finalVal/initial || finalVal/totalInv, 1/years) - 1) * 100) : 0;
+
+  document.getElementById('app-stats').innerHTML = `
+    <div class="metric-card"><div class="m-label">FINAL VALUE</div><div class="m-val green">${fmt(finalVal)}</div></div>
+    <div class="metric-card"><div class="m-label">TOTAL INVESTED</div><div class="m-val">${fmt(totalInv)}</div></div>
+    <div class="metric-card"><div class="m-label">WEALTH GAINED</div><div class="m-val amber">${fmt(gain)}</div></div>
+    <div class="metric-card"><div class="m-label">GAIN MULTIPLE</div><div class="m-val">${totalInv > 0 ? (finalVal/totalInv).toFixed(2) : '—'}x</div></div>
+  `;
+
+  if (myChart) myChart.destroy();
+  const ctx = document.getElementById('appreciate-chart').getContext('2d');
+  myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Portfolio Value',
+          data: value,
+          borderColor: '#7c6dfa',
+          backgroundColor: 'rgba(124,109,250,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 2.5,
+        },
+        {
+          label: 'Total Invested',
+          data: invested,
+          borderColor: '#34d399',
+          backgroundColor: 'rgba(52,211,153,0.05)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 2,
+          borderDash: [6,4],
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: '#9896b0', font: { family: "'DM Sans'", size: 12 }, boxWidth: 20, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#16161f',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#f0eff8',
+          bodyColor: '#9896b0',
+          padding: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#5c5a72', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#5c5a72', font: { size: 11 }, callback: v => '₹' + (v >= 10000000 ? (v/10000000).toFixed(1)+'Cr' : v >= 100000 ? (v/100000).toFixed(1)+'L' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v) }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+updateChart();
+</script>
+</body>
+</html>

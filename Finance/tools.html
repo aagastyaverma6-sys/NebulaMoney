@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Financial Tools — Nebula</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <a href="index.html" class="nav-logo">nebula<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="learn.html">Learn</a></li>
+    <li><a href="tools.html" class="active">Tools</a></li>
+    <li><a href="appreciate.html">Appreciate</a></li>
+    <li><a href="expenses.html">Expenses</a></li>
+    <li><a href="https://nebula-atom.vercel.app">Hub</a></li>
+  </ul>
+</nav>
+<main>
+<div class="container">
+  <div class="page-header fade-up">
+    <div class="breadcrumb"><a href="index.html">Home</a> / Tools</div>
+    <h1>Financial Calculators</h1>
+    <p>Run the numbers before you make any money move.</p>
+  </div>
+
+  <!-- EMI Calculator -->
+  <div class="calc-card fade-up">
+    <h3>🏦 EMI Calculator</h3>
+    <div class="calc-form">
+      <div class="field">
+        <label>LOAN AMOUNT (₹)</label>
+        <input type="number" id="emi-principal" value="500000" oninput="calcEMI()">
+      </div>
+      <div class="field">
+        <label>ANNUAL INTEREST RATE (%)</label>
+        <input type="number" id="emi-rate" value="10.5" step="0.1" oninput="calcEMI()">
+      </div>
+      <div class="field">
+        <label>TENURE (MONTHS)</label>
+        <input type="number" id="emi-tenure" value="60" oninput="calcEMI()">
+      </div>
+    </div>
+    <div class="result-box">
+      <div><div class="result-label">Monthly EMI</div><div class="result-val" id="emi-result">₹0</div></div>
+      <div><div class="result-label">Total Interest</div><div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--coral)" id="emi-interest">₹0</div></div>
+      <div><div class="result-label">Total Payment</div><div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text2)" id="emi-total">₹0</div></div>
+    </div>
+  </div>
+
+  <!-- SIP Calculator -->
+  <div class="calc-card fade-up fade-up-d1">
+    <h3>📈 SIP Returns Calculator</h3>
+    <div class="calc-form">
+      <div class="field">
+        <label>MONTHLY SIP AMOUNT (₹)</label>
+        <input type="number" id="sip-amount" value="5000" oninput="calcSIP()">
+      </div>
+      <div class="field">
+        <label>EXPECTED ANNUAL RETURN (%)</label>
+        <input type="number" id="sip-rate" value="12" step="0.5" oninput="calcSIP()">
+      </div>
+      <div class="field">
+        <label>TIME PERIOD (YEARS)</label>
+        <input type="number" id="sip-years" value="10" oninput="calcSIP()">
+      </div>
+    </div>
+    <div class="result-box">
+      <div><div class="result-label">Maturity Value</div><div class="result-val" id="sip-result">₹0</div></div>
+      <div><div class="result-label">Total Invested</div><div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text2)" id="sip-invested">₹0</div></div>
+      <div><div class="result-label">Wealth Gained</div><div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--amber)" id="sip-gain">₹0</div></div>
+    </div>
+  </div>
+
+  <!-- Savings Goal Calculator -->
+  <div class="calc-card fade-up fade-up-d2">
+    <h3>🎯 Savings Goal Calculator</h3>
+    <div class="calc-form">
+      <div class="field">
+        <label>TARGET AMOUNT (₹)</label>
+        <input type="number" id="goal-target" value="1000000" oninput="calcGoal()">
+      </div>
+      <div class="field">
+        <label>YEARS TO GOAL</label>
+        <input type="number" id="goal-years" value="5" oninput="calcGoal()">
+      </div>
+      <div class="field">
+        <label>EXPECTED RETURN (%)</label>
+        <input type="number" id="goal-rate" value="12" step="0.5" oninput="calcGoal()">
+      </div>
+    </div>
+    <div class="result-box">
+      <div><div class="result-label">Monthly SIP Needed</div><div class="result-val" id="goal-result">₹0</div></div>
+      <div><div class="result-label">Total Investment</div><div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text2)" id="goal-invested">₹0</div></div>
+    </div>
+  </div>
+
+  <!-- Tax Estimator -->
+  <div class="calc-card fade-up">
+    <h3>🧾 Income Tax Estimator (New Regime)</h3>
+    <div class="calc-form">
+      <div class="field">
+        <label>ANNUAL INCOME (₹)</label>
+        <input type="number" id="tax-income" value="800000" oninput="calcTax()">
+      </div>
+    </div>
+    <div id="tax-breakdown" style="margin-top:.75rem;"></div>
+  </div>
+
+</div>
+</main>
+
+<footer><div class="container"><p>nebula<span style="color:var(--accent2);">.</span> &nbsp;·&nbsp; <a href="index.html">Home</a></p></div></footer>
+
+<script>
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+function calcEMI() {
+  const P = parseFloat(document.getElementById('emi-principal').value) || 0;
+  const r = (parseFloat(document.getElementById('emi-rate').value) || 0) / 12 / 100;
+  const n = parseInt(document.getElementById('emi-tenure').value) || 1;
+  let emi = r > 0 ? P * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1) : P/n;
+  document.getElementById('emi-result').textContent = fmt(emi);
+  document.getElementById('emi-interest').textContent = fmt(emi*n - P);
+  document.getElementById('emi-total').textContent = fmt(emi*n);
+}
+
+function calcSIP() {
+  const P = parseFloat(document.getElementById('sip-amount').value) || 0;
+  const r = (parseFloat(document.getElementById('sip-rate').value) || 0) / 12 / 100;
+  const n = (parseInt(document.getElementById('sip-years').value) || 0) * 12;
+  const maturity = r > 0 ? P * (Math.pow(1+r,n)-1) * (1+r) / r : P*n;
+  const invested = P * n;
+  document.getElementById('sip-result').textContent = fmt(maturity);
+  document.getElementById('sip-invested').textContent = fmt(invested);
+  document.getElementById('sip-gain').textContent = fmt(maturity - invested);
+}
+
+function calcGoal() {
+  const FV = parseFloat(document.getElementById('goal-target').value) || 0;
+  const r = (parseFloat(document.getElementById('goal-rate').value) || 0) / 12 / 100;
+  const n = (parseInt(document.getElementById('goal-years').value) || 1) * 12;
+  const sip = r > 0 ? FV * r / ((Math.pow(1+r,n)-1) * (1+r)) : FV/n;
+  document.getElementById('goal-result').textContent = fmt(sip);
+  document.getElementById('goal-invested').textContent = fmt(sip * n);
+}
+
+function calcTax() {
+  const income = parseFloat(document.getElementById('tax-income').value) || 0;
+  const slabs = [
+    [300000, 0],
+    [700000, 0.05],
+    [1000000, 0.10],
+    [1200000, 0.15],
+    [1500000, 0.20],
+    [Infinity, 0.30]
+  ];
+  let tax = 0, prev = 0, rows = '';
+  const prevLimits = [0, 300000, 700000, 1000000, 1200000, 1500000];
+  const labels = ['Up to ₹3L', '₹3L–₹7L', '₹7L–₹10L', '₹10L–₹12L', '₹12L–₹15L', 'Above ₹15L'];
+  for (let i = 0; i < slabs.length; i++) {
+    const [limit, rate] = slabs[i];
+    if (income <= prevLimits[i]) break;
+    const taxable = Math.min(income, limit) - prevLimits[i];
+    const t = taxable * rate;
+    tax += t;
+    if (rate > 0 || taxable > 0) {
+      rows += `<div style="display:flex;justify-content:space-between;padding:.45rem .85rem;border-bottom:1px solid var(--border);font-size:.85rem;">
+        <span style="color:var(--text2)">${labels[i]} @ ${rate*100}%</span>
+        <span style="color:var(--text)">${fmt(t)}</span>
+      </div>`;
+    }
+    prev = limit;
+  }
+  // Rebate u/s 87A
+  let rebate = income <= 700000 ? Math.min(tax, 25000) : 0;
+  let finalTax = Math.max(0, tax - rebate);
+  let cess = finalTax * 0.04;
+  let total = finalTax + cess;
+
+  document.getElementById('tax-breakdown').innerHTML = `
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      ${rows}
+      ${rebate > 0 ? `<div style="display:flex;justify-content:space-between;padding:.45rem .85rem;border-bottom:1px solid var(--border);font-size:.85rem;"><span style="color:var(--green)">Rebate u/s 87A</span><span style="color:var(--green)">−${fmt(rebate)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;padding:.45rem .85rem;border-bottom:1px solid var(--border);font-size:.85rem;"><span style="color:var(--text2)">Health & Ed. Cess (4%)</span><span>${fmt(cess)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.75rem .85rem;font-size:1rem;font-weight:600;background:var(--bg2);">
+        <span>Total Tax Payable</span>
+        <span style="color:var(--coral)">${fmt(total)}</span>
+      </div>
+    </div>
+    <div style="margin-top:.75rem;font-size:.82rem;color:var(--text3);">Effective tax rate: ${income > 0 ? ((total/income)*100).toFixed(2) : 0}% &nbsp;·&nbsp; New regime 2024–25</div>`;
+}
+
+calcEMI(); calcSIP(); calcGoal(); calcTax();
+</script>
+</body>
+</html>
